@@ -145,6 +145,7 @@ void Time()
     lcd.setCursor(2, 0);
     lcd.print("Left to work");
   }
+  // Цикл математики времени ???
   // Тут будут часы которые постоянно обновляются
   Iterations++;
 }
