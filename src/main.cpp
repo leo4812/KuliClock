@@ -5,40 +5,62 @@
 // *************************** LCD1602 ****************************
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
+// **************************** DS3231 *****************************
+#include <microDS3231.h>
 
 #define DHTPIN 2      // пин DHT22
 #define DHTTYPE DHT22 // тип датчика DHT 22  (AM2302), AM2321
 
-uint8_t Hum = 0;
-float Temp = 0;
+uint8_t Hum = 0; // Переменная влажности
+float Temp = 0;  // Переменная температуры
+
+uint8_t Hours = 0;   // Часы
+uint8_t Minutes = 0; // Минуты
+uint8_t Seconds = 0; // Секунды
+uint8_t Date = 0;    // Число
+uint8_t Month = 0;   // Месяц
+uint16_t Year = 0;   // Год
+uint8_t Day = 0;     // День недели Пн...Вс (1...7)
+
+uint8_t LeftHourse = 0;  // Осталось работать часов
+uint8_t LeftMinutes = 0; // Осталось работать минут
+uint8_t LeftSeconds = 0; // Осталось работать секунд
+
 uint32_t TimerDHT = 0;
 uint32_t TimerFlag = 0;
+uint32_t TimerDS3231 = 0;
 uint16_t MyPeriod = 30000;
 
 uint32_t Iterations = 0; // Счетчик количества итераций (сбрасывается при смене флажков)
 
-bool Flag_Time = true;
+bool Flag_Time = true; // Флажки
 bool Flag_HumTemp = false;
 
 DHT dht(DHTPIN, DHTTYPE);
 LiquidCrystal_I2C lcd(0x27, 16, 2);
+MicroDS3231 rtc; // по умолчанию адрес 0x68
 
-void Start();   // Приветствие
-void ReadDHT(); // Чтение DHT22
-void Time();    // Left to work (Осталось работать)
-void HumTemp(); // HumTemp (Влажность и температура)
+void Start();       // Приветствие
+void ReadDHT();     // Чтение DHT22
+void Time();        // Left to work (Осталось работать)
+void HumTemp();     // HumTemp (Влажность и температура)
+void ReadTime();    // Опрос датчика DS3231
+void MathTime();    // Математика оставшегося рабочего времени
+void WorkingTime(); // Рабочее время
 
 void setup()
 {
   Serial.begin(9600);
   dht.begin();
   lcd.init();
+  rtc.begin();
   Start();
   TimerFlag = millis();
 }
 
 void loop()
 {
+  ReadTime();
   ReadDHT();
   if ((millis() - TimerFlag) >= MyPeriod)
   {
@@ -137,17 +159,10 @@ void ReadDHT()
 }
 void Time()
 {
-  if (Iterations == 0)
+  if ((Hours >= 9) && (Hours < 17)) // Рабочее время
   {
-    lcd.clear();
-    delay(300);
-
-    lcd.setCursor(2, 0);
-    lcd.print("Left to work");
+    WorkingTime();
   }
-  // Цикл математики времени ???
-  // Тут будут часы которые постоянно обновляются
-  Iterations++;
 }
 void HumTemp()
 {
@@ -178,4 +193,38 @@ void HumTemp()
   // Serial.println(Temp);
 
   Iterations++;
+}
+void ReadTime()
+{
+  if ((millis() - TimerDS3231) >= 200)
+  {
+    TimerDS3231 = millis();
+    Hours = rtc.getHours();
+    Minutes = rtc.getMinutes();
+    Seconds = rtc.getSeconds();
+    Date = rtc.getDate();
+    Month = rtc.getMonth();
+    Year = rtc.getYear();
+    Day = rtc.getDay();
+  }
+}
+void WorkingTime()
+{
+  if (Iterations == 0)
+  {
+    lcd.clear();
+    delay(300);
+
+    lcd.setCursor(2, 0);
+    lcd.print("Left to work");
+  }
+  MathTime();
+  Iterations++;
+}
+void MathTime()
+{
+  LeftHourse = 17 - (Hours + 1);
+  LeftMinutes = 59 - Minutes;
+  LeftSeconds = 59 - Seconds;
+  // Принты на дисплей будут тут
 }
