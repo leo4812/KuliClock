@@ -20,7 +20,7 @@ uint8_t Seconds = 0; // Секунды
 uint8_t Date = 0;    // Число
 uint8_t Month = 0;   // Месяц
 uint16_t Year = 0;   // Год
-uint8_t Day = 0;     // День недели Пн...Вс (1...7)
+uint8_t Day = 0;     // День недели пн...пт (1...7)
 
 uint8_t LeftHourse = 0;  // Осталось работать часов
 uint8_t LeftMinutes = 0; // Осталось работать минут
@@ -40,13 +40,16 @@ DHT dht(DHTPIN, DHTTYPE);
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 MicroDS3231 rtc; // по умолчанию адрес 0x68
 
-void Start();       // Приветствие
-void ReadDHT();     // Чтение DHT22
-void Time();        // Left to work (Осталось работать)
-void HumTemp();     // HumTemp (Влажность и температура)
-void ReadTime();    // Опрос датчика DS3231
-void MathTime();    // Математика оставшегося рабочего времени
-void WorkingTime(); // Рабочее время
+void Start();          // Приветствие
+void ReadDHT();        // Чтение DHT22
+void Time();           // Left to work (Осталось работать)
+void HumTemp();        // HumTemp (влажность и температура)
+void ReadTime();       // Опрос датчика DS3231
+void MathTime();       // Математика оставшегося рабочего времени
+void WorkingTime();    // Рабочее время
+void Weekend();        // Выходные
+void PreWorkingDay();  // Рабочий день еще не начался
+void PostWorkingDay(); // Рабочий день закончен
 
 void setup()
 {
@@ -159,9 +162,24 @@ void ReadDHT()
 }
 void Time()
 {
-  if ((Hours >= 9) && (Hours < 17)) // Рабочее время
+  if (Day <= 5) // День недели (с понедельника по пятницу)
   {
-    WorkingTime();
+    if ((Hours >= 0) && (Hours < 9)) // с 0:00 до 9:00
+    {
+      PreWorkingDay();
+    }
+    else if ((Hours >= 9) && (Hours < 17)) // Рабочее время
+    {
+      WorkingTime();
+    }
+    else if ((Hours >= 17) && (Hours < 24)) // с 17:00 до 24:00
+    {
+      PostWorkingDay();
+    }
+  }
+  else // Выходные
+  {
+    Weekend();
   }
 }
 void HumTemp()
@@ -187,9 +205,9 @@ void HumTemp()
     lcd.setCursor(7, 1);
     lcd.print(Temp);
   }
-  // Serial.print("Важность: ");
+  // Serial.print("Влажность: ");
   // Serial.print(Hum);
-  // Serial.print("   Температура: ");
+  // Serial.print("   “Температура: ");
   // Serial.println(Temp);
 
   Iterations++;
@@ -217,6 +235,11 @@ void WorkingTime()
 
     lcd.setCursor(2, 0);
     lcd.print("Left to work");
+
+    lcd.setCursor(6, 1);
+    lcd.print(":");
+    lcd.setCursor(9, 1);
+    lcd.print(":");
   }
   MathTime();
   Iterations++;
@@ -226,5 +249,89 @@ void MathTime()
   LeftHourse = 17 - (Hours + 1);
   LeftMinutes = 59 - Minutes;
   LeftSeconds = 59 - Seconds;
-  // Принты на дисплей будут тут
+  if (LeftHourse < 10) // Часы
+  {
+    lcd.setCursor(4, 1);
+    lcd.print("0");
+    lcd.print(LeftHourse);
+  }
+  else
+  {
+    lcd.setCursor(4, 1);
+    lcd.print(LeftHourse);
+  }
+
+  if (LeftMinutes < 10) // Минуты
+  {
+    lcd.setCursor(7, 1);
+    lcd.print("0");
+    lcd.print(LeftMinutes);
+  }
+  else
+  {
+    lcd.setCursor(7, 1);
+    lcd.print(LeftMinutes);
+  }
+
+  if (LeftSeconds < 10) // Секунды
+  {
+    lcd.setCursor(10, 1);
+    lcd.print("0");
+    lcd.print(LeftSeconds);
+  }
+  else
+  {
+    lcd.setCursor(10, 1);
+    lcd.print(LeftSeconds);
+  }
+}
+void Weekend()
+{
+  if (Iterations == 0)
+  {
+    lcd.clear();
+    delay(300);
+
+    lcd.setCursor(4, 0);
+    lcd.print("Weekend");
+    if (Day == 6) // Суббота
+    {
+      lcd.setCursor(4, 1);
+      lcd.print("Saturday");
+    }
+    else // Воскресенье
+    {
+      lcd.setCursor(5, 1);
+      lcd.print("Sunday");
+    }
+  }
+  Iterations++;
+}
+void PreWorkingDay()
+{
+  if (Iterations == 0)
+  {
+    lcd.clear();
+    delay(300);
+
+    lcd.setCursor(0, 0);
+    lcd.print("The work day");
+    lcd.setCursor(0, 1);
+    lcd.print("has not Started");
+  }
+  Iterations++;
+}
+void PostWorkingDay()
+{
+  if (Iterations == 0)
+  {
+    lcd.clear();
+    delay(300);
+
+    lcd.setCursor(0, 0);
+    lcd.print("Working day");
+    lcd.setCursor(8, 1);
+    lcd.print("is Over!");
+  }
+  Iterations++;
 }
