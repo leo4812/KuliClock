@@ -11,6 +11,8 @@
 #define DHTPIN 2      // пин DHT22
 #define DHTTYPE DHT22 // тип датчика DHT 22  (AM2302), AM2321
 
+#define PinBuzzer 3 // Пин пассивного зуммера
+
 uint8_t Hum = 0; // Переменная влажности
 float Temp = 0;  // Переменная температуры
 
@@ -36,6 +38,18 @@ uint32_t Iterations = 0; // Счетчик количества итераций
 bool Flag_Time = true; // Флажки
 bool Flag_HumTemp = false;
 
+bool CountdownFlag = false; // Флажок для функции обратного отсчета
+bool Second10 = false;
+bool Second9 = false;
+bool Second8 = false;
+bool Second7 = false;
+bool Second6 = false;
+bool Second5 = false;
+bool Second4 = false;
+bool Second3 = false;
+bool Second2 = false;
+bool Second1 = false;
+
 DHT dht(DHTPIN, DHTTYPE);
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 MicroDS3231 rtc; // по умолчанию адрес 0x68
@@ -50,6 +64,11 @@ void WorkingTime();    // Рабочее время
 void Weekend();        // Выходные
 void PreWorkingDay();  // Рабочий день еще не начался
 void PostWorkingDay(); // Рабочий день закончен
+void Countdown();      // Обратный осчет секунд до конца рабочего дня
+void ShortSignal();    // Короткий звуковой сигнал
+void LongSignal();     // Длинный звуковой сигнал
+void GoHome();         // Вызывается ровно в 17:00 после длинного звукового сигнала
+void Music();          // Функция музыки (управляет выбором музыки)
 
 void setup()
 {
@@ -67,7 +86,7 @@ void loop()
   ReadDHT();
   if ((millis() - TimerFlag) >= MyPeriod)
   {
-    TimerFlag = millis();
+    TimerFlag = millis(); // ЕСЛИ ДОБАВЛЯТЬ СЮДА НОВЫЕ ФЛАГИ, ТО ДОБАВИТЬ ЕЩЕ И В GoHome() в состояние false
     Iterations = 0;
     if (Flag_Time == true)
     {
@@ -81,13 +100,35 @@ void loop()
     }
   }
   //*************************************************
-  if (Flag_Time == true)
+  if ((Hours == 16) && (Minutes == 59))
   {
-    Time();
+    Countdown();
   }
-  if (Flag_HumTemp == true)
+  else
   {
-    HumTemp();
+    if (CountdownFlag == true) // Сброс флагов обратного отсчета
+    {
+      CountdownFlag = false;
+      Second10 = false;
+      Second9 = false;
+      Second8 = false;
+      Second7 = false;
+      Second6 = false;
+      Second5 = false;
+      Second4 = false;
+      Second3 = false;
+      Second2 = false;
+      Second1 = false;
+    }
+
+    if (Flag_Time == true)
+    {
+      Time();
+    }
+    if (Flag_HumTemp == true)
+    {
+      HumTemp();
+    }
   }
 }
 void Start()
@@ -334,4 +375,133 @@ void PostWorkingDay()
     lcd.print("is Over!");
   }
   Iterations++;
+}
+void Countdown()
+{
+  if (CountdownFlag == false)
+  {
+    lcd.clear();
+    delay(300);
+
+    lcd.setCursor(0, 0);
+    lcd.print("Over of work in:");
+  }
+  LeftSeconds = 59 - Seconds;
+  if (LeftSeconds < 10) // Секунды
+  {
+    lcd.setCursor(7, 1);
+    lcd.print("0");
+    lcd.print(LeftSeconds);
+  }
+  else
+  {
+    lcd.setCursor(7, 1);
+    lcd.print(LeftSeconds);
+  }
+  switch (LeftSeconds)
+  {
+  case 10:
+    if (Second10 == false)
+    {
+      ShortSignal();
+    }
+    Second10 = true;
+    break;
+  case 9:
+    if (Second9 == false)
+    {
+      ShortSignal();
+    }
+    Second9 = true;
+    break;
+  case 8:
+    if (Second8 == false)
+    {
+      ShortSignal();
+    }
+    Second8 = true;
+    break;
+  case 7:
+    if (Second7 == false)
+    {
+      ShortSignal();
+    }
+    Second7 = true;
+    break;
+  case 6:
+    if (Second6 == false)
+    {
+      ShortSignal();
+    }
+    Second6 = true;
+    break;
+  case 5:
+    if (Second5 == false)
+    {
+      ShortSignal();
+    }
+    Second5 = true;
+    break;
+  case 4:
+    if (Second4 == false)
+    {
+      ShortSignal();
+    }
+    Second4 = true;
+    break;
+  case 3:
+    if (Second3 == false)
+    {
+      ShortSignal();
+    }
+    Second3 = true;
+    break;
+  case 2:
+    if (Second2 == false)
+    {
+      ShortSignal();
+    }
+    Second2 = true;
+    break;
+  case 1:
+    if (Second1 == false)
+    {
+      LongSignal();
+      GoHome();
+    }
+    Second1 = true;
+    break;
+  }
+  CountdownFlag = true;
+}
+void ShortSignal()
+{
+  tone(PinBuzzer, 1000);
+  delay(200);
+  noTone(PinBuzzer);
+}
+void LongSignal()
+{
+  tone(PinBuzzer, 1000);
+  delay(900);
+  noTone(PinBuzzer);
+}
+void GoHome()
+{
+  lcd.clear();
+  delay(300);
+
+  lcd.setCursor(0, 0);
+  lcd.print("Working day");
+  lcd.setCursor(8, 1);
+  lcd.print("is Over!");
+  delay(1500);
+  Music();
+  TimerFlag = millis();
+  Flag_Time = false;
+  Flag_HumTemp = true; // *************** НОВЫЕ ФЛАГИ СЮДА!!!!!!! *********************
+}
+void Music()
+{
+  // ****************** ТУТ БУДЕТ ВЫЗЫВАТЬСЯ РАЗНАЯ МУЗЫКИ ************************
 }
