@@ -31,7 +31,7 @@ uint8_t LeftSeconds = 0; // Осталось работать секунд
 uint32_t TimerDHT = 0;
 uint32_t TimerFlag = 0;
 uint32_t TimerDS3231 = 0;
-uint16_t MyPeriod = 30000;
+uint16_t MyPeriod = 25000;
 
 uint32_t Iterations = 0; // Счетчик количества итераций (сбрасывается при смене флажков)
 
@@ -88,15 +88,17 @@ void loop()
   {
     TimerFlag = millis(); // ЕСЛИ ДОБАВЛЯТЬ СЮДА НОВЫЕ ФЛАГИ, ТО ДОБАВИТЬ ЕЩЕ И В GoHome() в состояние false
     Iterations = 0;
-    if (Flag_Time == true)
+    if (Flag_Time == true) // Условие включает темп. влаж.
     {
       Flag_Time = false;
       Flag_HumTemp = true;
+      // Тут условие времени меняющее MyPeriod
     }
-    else if (Flag_HumTemp == true)
+    else if (Flag_HumTemp == true) // Условие включает Таймер раб. времени
     {
       Flag_Time = true;
       Flag_HumTemp = false;
+      // Тут условие времени меняющее MyPeriod
     }
   }
   //*************************************************
@@ -191,14 +193,6 @@ void ReadDHT()
     TimerDHT = millis();
     Hum = dht.readHumidity();
     Temp = dht.readTemperature();
-    if (Flag_HumTemp == true)
-    {
-      lcd.setCursor(7, 0);
-      lcd.print(Hum);
-
-      lcd.setCursor(7, 1);
-      lcd.print(Temp);
-    }
   }
 }
 void Time()
@@ -246,6 +240,11 @@ void HumTemp()
     lcd.setCursor(7, 1);
     lcd.print(Temp);
   }
+  lcd.setCursor(7, 0);
+  lcd.print(Hum);
+
+  lcd.setCursor(7, 1);
+  lcd.print(Temp);
   // Serial.print("Влажность: ");
   // Serial.print(Hum);
   // Serial.print("   “Температура: ");
