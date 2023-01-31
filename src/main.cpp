@@ -37,6 +37,7 @@ uint32_t Iterations = 0; // Счетчик количества итераций
 
 bool Flag_Time = true; // Флажки
 bool Flag_HumTemp = false;
+bool Flag_RealTime = false;
 
 bool CountdownFlag = false; // Флажок для функции обратного отсчета
 bool Second10 = false;
@@ -69,6 +70,7 @@ void ShortSignal();    // Короткий звуковой сигнал
 void LongSignal();     // Длинный звуковой сигнал
 void GoHome();         // Вызывается ровно в 17:00 после длинного звукового сигнала
 void Music();          // Функция музыки (управляет выбором музыки)
+void RealTime();       // Функция отрисовки реального времени и даты
 
 void setup()
 {
@@ -92,17 +94,26 @@ void loop()
     {
       Flag_Time = false;
       Flag_HumTemp = true;
+      Flag_RealTime = false;
       // Тут условие времени меняющее MyPeriod
     }
-    else if (Flag_HumTemp == true) // Условие включает Таймер раб. времени
+    else if (Flag_HumTemp == true)
+    {
+      Flag_Time = false;
+      Flag_HumTemp = false;
+      Flag_RealTime = true;
+      // Тут условие времени меняющее MyPeriod
+    }
+    else if (Flag_RealTime == true)
     {
       Flag_Time = true;
       Flag_HumTemp = false;
+      Flag_RealTime = false;
       // Тут условие времени меняющее MyPeriod
     }
   }
   //*************************************************
-  if ((Hours == 16) && (Minutes == 59))
+  if ((Day <= 5) && (Hours == 16) && (Minutes == 59))
   {
     Countdown();
   }
@@ -130,6 +141,10 @@ void loop()
     if (Flag_HumTemp == true)
     {
       HumTemp();
+    }
+    if (Flag_RealTime == true)
+    {
+      RealTime();
     }
   }
 }
@@ -497,10 +512,145 @@ void GoHome()
   delay(1500);
   Music();
   TimerFlag = millis();
+  MyPeriod = 25000;
+  Iterations = 0;
   Flag_Time = false;
   Flag_HumTemp = true; // *************** НОВЫЕ ФЛАГИ СЮДА!!!!!!! *********************
+  Flag_RealTime = false;
 }
 void Music()
 {
   // ****************** ТУТ БУДЕТ ВЫЗЫВАТЬСЯ РАЗНАЯ МУЗЫКИ ************************
+}
+void RealTime()
+{
+  if (Iterations == 0)
+  {
+    lcd.clear();
+    delay(300);
+
+    lcd.setCursor(0, 0);
+    if (Date < 10) // Дата
+    {
+      lcd.setCursor(0, 0);
+      lcd.print("0");
+      lcd.print(Date);
+    }
+    else
+    {
+      lcd.setCursor(0, 0);
+      lcd.print(Date);
+    }
+
+    lcd.setCursor(3, 0);
+
+    switch (Month)
+    {
+    case 1:
+      lcd.print("Jan"); // Январь
+      break;
+    case 2:
+      lcd.print("Feb"); // Февраль
+      break;
+    case 3:
+      lcd.print("Mar"); // Март
+      break;
+    case 4:
+      lcd.print("Apr"); // Апрель
+      break;
+    case 5:
+      lcd.print("May"); // Май
+      break;
+    case 6:
+      lcd.print("Jun"); // Июнь
+      break;
+    case 7:
+      lcd.print("Jul"); // Июль
+      break;
+    case 8:
+      lcd.print("Aug"); // Август
+      break;
+    case 9:
+      lcd.print("Sep"); // Сентябрь
+      break;
+    case 10:
+      lcd.print("Oct"); // Октябрь
+      break;
+    case 11:
+      lcd.print("Nov"); // Ноябрь
+      break;
+    case 12:
+      lcd.print("Dec"); // Декабрь
+      break;
+    }
+    lcd.setCursor(7, 0);
+    lcd.print(Year);
+    lcd.print(",");
+    lcd.setCursor(13, 0);
+    switch (Day)
+    {
+    case 1:
+      lcd.print("Mon"); // Понедельник
+      break;
+    case 2:
+      lcd.print("Tue"); // Вторник
+      break;
+    case 3:
+      lcd.print("Wed"); // Среда
+      break;
+    case 4:
+      lcd.print("Tho"); // Четверг
+      break;
+    case 5:
+      lcd.print("Fri"); // Пятница
+      break;
+    case 6:
+      lcd.print("Sat"); // Суббота
+      break;
+    case 7:
+      lcd.print("Sun"); // Воскресенье
+      break;
+    }
+    lcd.setCursor(6, 1);
+    lcd.print(":");
+    lcd.setCursor(9, 1);
+    lcd.print(":");
+  }
+
+  if (Hours < 10) // Часы
+  {
+    lcd.setCursor(4, 1);
+    lcd.print("0");
+    lcd.print(Hours);
+  }
+  else
+  {
+    lcd.setCursor(4, 1);
+    lcd.print(Hours);
+  }
+
+  if (Minutes < 10) // Минуты
+  {
+    lcd.setCursor(7, 1);
+    lcd.print("0");
+    lcd.print(Minutes);
+  }
+  else
+  {
+    lcd.setCursor(7, 1);
+    lcd.print(Minutes);
+  }
+
+  if (Seconds < 10) // Секунды
+  {
+    lcd.setCursor(10, 1);
+    lcd.print("0");
+    lcd.print(Seconds);
+  }
+  else
+  {
+    lcd.setCursor(10, 1);
+    lcd.print(Seconds);
+  }
+  Iterations++;
 }
