@@ -5,11 +5,13 @@
 // *************************** LCD1602 ****************************
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
-// **************************** DS3231 *****************************
+// **************************** DS3231 ****************************
 #include <microDS3231.h>
-// **************************** BMP180 *****************************
+// **************************** BMP180 ****************************
 #include <SPI.h>
 #include <Adafruit_BMP085.h>
+// ***************************** Noty *****************************
+#include "pitches.h"
 
 #define DHTPIN 2      // пин DHT22
 #define DHTTYPE DHT22 // тип датчика DHT 22  (AM2302), AM2321
@@ -82,6 +84,8 @@ void Music();          // Функция музыки (управляет выб
 void RealTime();       // Функция отрисовки реального времени и даты
 void ReadPressure();   // Функция опроса датчика давления
 void Pressure();       // Функция вызова математики и отрисовки давления
+void YaSvoboden();     // Песня Я Свободен!
+void Fanfary();        // Приветственные фанфары
 
 void setup()
 {
@@ -253,7 +257,8 @@ void Start()
   lcd.print("k");
 
   lcd.noCursor();
-  delay(19000);
+  Fanfary();
+  delay(14000);
   lcd.clear();
   delay(1000);
 }
@@ -567,6 +572,7 @@ void GoHome()
   lcd.print("is Over!");
   delay(1500);
   Music();
+  delay(1500);
   TimerFlag = millis();
   MyPeriod = 25000;
   Iterations = 0;
@@ -578,6 +584,7 @@ void GoHome()
 void Music()
 {
   // ****************** ТУТ БУДЕТ ВЫЗЫВАТЬСЯ РАЗНАЯ МУЗЫКИ ************************
+  YaSvoboden();
 }
 void RealTime()
 {
@@ -744,4 +751,120 @@ void Pressure()
   lcd.setCursor(7, 1);
   lcd.print(Press_BMP180);
   Iterations++;
+}
+void YaSvoboden()
+{
+  tone(PinBuzzer, NOTE_DS4, 300); // Ре#
+  delay(500);
+  tone(PinBuzzer, NOTE_DS4, 180); // Ре#
+  delay(300);
+  tone(PinBuzzer, NOTE_DS4, 180); // Ре#
+  delay(300);
+  tone(PinBuzzer, NOTE_G4, 400); // Соль
+  delay(750);
+
+  tone(PinBuzzer, NOTE_DS4, 200); // Ре#
+  delay(300);
+  tone(PinBuzzer, NOTE_DS4, 200); // Ре#
+  delay(300);
+  tone(PinBuzzer, NOTE_DS4, 200); // Ре#
+  delay(300);
+  tone(PinBuzzer, NOTE_D4, 220); // Ре
+  delay(300);
+  tone(PinBuzzer, NOTE_C4, 180); // До
+  delay(300);
+  tone(PinBuzzer, NOTE_AS3, 180); // Ля#3
+  delay(300);
+  tone(PinBuzzer, NOTE_C4, 450); // До
+  delay(800);
+
+  tone(PinBuzzer, NOTE_DS4, 300); // Ре#
+  delay(500);
+  tone(PinBuzzer, NOTE_DS4, 180); // Ре#
+  delay(300);
+  tone(PinBuzzer, NOTE_DS4, 180); // Ре#
+  delay(300);
+  tone(PinBuzzer, NOTE_G4, 400); // Соль
+  delay(750);
+
+  tone(PinBuzzer, NOTE_DS4, 200); // Ре#
+  delay(300);
+  tone(PinBuzzer, NOTE_DS4, 200); // Ре#
+  delay(300);
+  tone(PinBuzzer, NOTE_DS4, 200); // Ре#
+  delay(300);
+  tone(PinBuzzer, NOTE_D4, 220); // Ре
+  delay(300);
+  tone(PinBuzzer, NOTE_C4, 210); // До
+  delay(300);
+  tone(PinBuzzer, NOTE_AS3, 210); // Ля#3
+  delay(300);
+  tone(PinBuzzer, NOTE_C4, 450); // До
+  delay(800);
+
+  tone(PinBuzzer, NOTE_DS4, 300); // Ре#
+  delay(500);
+  tone(PinBuzzer, NOTE_DS4, 180); // Ре#
+  delay(300);
+  tone(PinBuzzer, NOTE_DS4, 180); // Ре#
+  delay(300);
+  tone(PinBuzzer, NOTE_G4, 400); // Соль
+  delay(750);
+
+  tone(PinBuzzer, NOTE_DS4, 200); // Ре#
+  delay(300);
+  tone(PinBuzzer, NOTE_DS4, 200); // Ре#
+  delay(300);
+  tone(PinBuzzer, NOTE_DS4, 200); // Ре#
+  delay(300);
+  tone(PinBuzzer, NOTE_D4, 220); // Ре
+  delay(300);
+  tone(PinBuzzer, NOTE_C4, 180); // До
+  delay(300);
+  tone(PinBuzzer, NOTE_AS3, 180); // Ля#3
+  delay(300);
+  tone(PinBuzzer, NOTE_C4, 450); // До
+  delay(800);
+
+  tone(PinBuzzer, NOTE_DS4, 300); // Ре#
+  delay(500);
+  tone(PinBuzzer, NOTE_DS4, 180); // Ре#
+  delay(300);
+  tone(PinBuzzer, NOTE_DS4, 180); // Ре#
+  delay(300);
+  tone(PinBuzzer, NOTE_G4, 400); // Соль
+  delay(750);
+
+  tone(PinBuzzer, NOTE_DS4, 200); // Ре#
+  delay(300);
+  tone(PinBuzzer, NOTE_DS4, 200); // Ре#
+  delay(300);
+  tone(PinBuzzer, NOTE_DS4, 200); // Ре#
+  delay(300);
+  tone(PinBuzzer, NOTE_D4, 220); // Ре
+  delay(300);
+  tone(PinBuzzer, NOTE_C4, 210); // До
+  delay(300);
+  tone(PinBuzzer, NOTE_AS3, 210); // Ля#3
+  delay(300);
+  tone(PinBuzzer, NOTE_C4, 700); // До
+  delay(1000);
+  noTone(PinBuzzer);
+  delay(1000);
+}
+void Fanfary()
+{
+  int melody[] = {NOTE_C4, NOTE_G3, NOTE_G3, NOTE_A3, NOTE_G3, 0, NOTE_B3, NOTE_C4};
+
+  int noteDurations[] = {4, 8, 8, 4, 4, 4, 4, 4};
+
+  for (int thisNote = 0; thisNote < 8; thisNote++)
+  {
+    int noteDuration = 1000 / noteDurations[thisNote];
+    tone(PinBuzzer, melody[thisNote], noteDuration);
+
+    int pauseBetweenNotes = noteDuration * 1.30;
+    delay(pauseBetweenNotes);
+    noTone(PinBuzzer);
+  }
 }
