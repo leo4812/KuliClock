@@ -7,6 +7,9 @@
 #include <LiquidCrystal_I2C.h>
 // **************************** DS3231 *****************************
 #include <microDS3231.h>
+// **************************** BMP180 *****************************
+#include <SPI.h>
+#include <Adafruit_BMP085.h>
 
 #define DHTPIN 2      // пин DHT22
 #define DHTTYPE DHT22 // тип датчика DHT 22  (AM2302), AM2321
@@ -15,6 +18,9 @@
 
 uint8_t Hum = 0; // Переменная влажности
 float Temp = 0;  // Переменная температуры
+
+float Temp_BMP180 = 0;     // Переменная температуры с датчика BMP180
+uint32_t Press_BMP180 = 0; // Переменная давления с датчика BMP180
 
 uint8_t Hours = 0;   // Часы
 uint8_t Minutes = 0; // Минуты
@@ -31,6 +37,7 @@ uint8_t LeftSeconds = 0; // Осталось работать секунд
 uint32_t TimerDHT = 0;
 uint32_t TimerFlag = 0;
 uint32_t TimerDS3231 = 0;
+uint32_t TimerBMP180 = 0;
 uint16_t MyPeriod = 25000;
 
 uint32_t Iterations = 0; // Счетчик количества итераций (сбрасывается при смене флажков)
@@ -38,6 +45,7 @@ uint32_t Iterations = 0; // Счетчик количества итераций
 bool Flag_Time = true; // Флажки
 bool Flag_HumTemp = false;
 bool Flag_RealTime = false;
+bool Flag_Pressure = false;
 
 bool CountdownFlag = false; // Флажок для функции обратного отсчета
 bool Second10 = false;
@@ -54,6 +62,7 @@ bool Second1 = false;
 DHT dht(DHTPIN, DHTTYPE);
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 MicroDS3231 rtc; // по умолчанию адрес 0x68
+Adafruit_BMP085 bmp;
 
 void Start();          // Приветствие
 void ReadDHT();        // Чтение DHT22
@@ -71,6 +80,8 @@ void LongSignal();     // Длинный звуковой сигнал
 void GoHome();         // Вызывается ровно в 17:00 после длинного звукового сигнала
 void Music();          // Функция музыки (управляет выбором музыки)
 void RealTime();       // Функция отрисовки реального времени и даты
+void ReadPressure();   // Функция опроса датчика давления
+void Pressure();       // Функция вызова математики и отрисовки давления
 
 void setup()
 {
@@ -78,6 +89,7 @@ void setup()
   dht.begin();
   lcd.init();
   rtc.begin();
+  bmp.begin();
   Start();
   TimerFlag = millis();
 }
@@ -86,30 +98,70 @@ void loop()
 {
   ReadTime();
   ReadDHT();
+  ReadPressure();
   if ((millis() - TimerFlag) >= MyPeriod)
   {
     TimerFlag = millis(); // ЕСЛИ ДОБАВЛЯТЬ СЮДА НОВЫЕ ФЛАГИ, ТО ДОБАВИТЬ ЕЩЕ И В GoHome() в состояние false
     Iterations = 0;
-    if (Flag_Time == true) // Условие включает темп. влаж.
+    if (Flag_Time == true) // Период Темп Влаж
     {
       Flag_Time = false;
       Flag_HumTemp = true;
       Flag_RealTime = false;
-      // Тут условие времени меняющее MyPeriod
+      Flag_Pressure = false;
+      if ((Day <= 5) && (Hours >= 9) && (Hours < 17))
+      {
+        MyPeriod = 20000;
+      }
+      else
+      {
+        MyPeriod = 25000;
+      }
     }
-    else if (Flag_HumTemp == true)
+    else if (Flag_HumTemp == true) // Период Даты Время
     {
       Flag_Time = false;
       Flag_HumTemp = false;
       Flag_RealTime = true;
-      // Тут условие времени меняющее MyPeriod
+      Flag_Pressure = false;
+      if ((Day <= 5) && (Hours >= 9) && (Hours < 17))
+      {
+        MyPeriod = 15000;
+      }
+      else
+      {
+        MyPeriod = 20000;
+      }
     }
-    else if (Flag_RealTime == true)
+    else if (Flag_RealTime == true) // Период Давления
+    {
+      Flag_Time = false;
+      Flag_HumTemp = false;
+      Flag_RealTime = false;
+      Flag_Pressure = true;
+      if ((Day <= 5) && (Hours >= 9) && (Hours < 17))
+      {
+        MyPeriod = 10000;
+      }
+      else
+      {
+        MyPeriod = 15000;
+      }
+    }
+    else if (Flag_Pressure == true) // Период Рабочего времени
     {
       Flag_Time = true;
       Flag_HumTemp = false;
       Flag_RealTime = false;
-      // Тут условие времени меняющее MyPeriod
+      Flag_Pressure = false;
+      if ((Day <= 5) && (Hours >= 9) && (Hours < 17))
+      {
+        MyPeriod = 25000;
+      }
+      else
+      {
+        MyPeriod = 10000;
+      }
     }
   }
   //*************************************************
@@ -145,6 +197,10 @@ void loop()
     if (Flag_RealTime == true)
     {
       RealTime();
+    }
+    if (Flag_Pressure == true)
+    {
+      Pressure();
     }
   }
 }
@@ -517,6 +573,7 @@ void GoHome()
   Flag_Time = false;
   Flag_HumTemp = true; // *************** НОВЫЕ ФЛАГИ СЮДА!!!!!!! *********************
   Flag_RealTime = false;
+  Flag_Pressure = false;
 }
 void Music()
 {
@@ -652,5 +709,39 @@ void RealTime()
     lcd.setCursor(10, 1);
     lcd.print(Seconds);
   }
+  Iterations++;
+}
+void ReadPressure()
+{
+  if ((millis() - TimerBMP180) >= 55000)
+  {
+    TimerBMP180 = millis();
+    Temp_BMP180 = bmp.readTemperature();
+    Press_BMP180 = bmp.readPressure();
+  }
+}
+void Pressure()
+{
+  float PressMM = ((float)Press_BMP180 * 0.00750);
+  uint16_t PressMMprint = PressMM;
+  if (Iterations == 0)
+  {
+    lcd.clear();
+    delay(300);
+
+    lcd.setCursor(0, 0);
+    lcd.print("Press:");
+    lcd.setCursor(14, 0);
+    lcd.print("mm");
+
+    lcd.setCursor(0, 1);
+    lcd.print("Press:");
+    lcd.setCursor(14, 1);
+    lcd.print("Pa");
+  }
+  lcd.setCursor(7, 0);
+  lcd.print(PressMMprint);
+  lcd.setCursor(7, 1);
+  lcd.print(Press_BMP180);
   Iterations++;
 }
