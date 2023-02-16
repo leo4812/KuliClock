@@ -86,6 +86,7 @@ void ReadPressure();   // Функция опроса датчика давле�
 void Pressure();       // Функция вызова математики и отрисовки давления
 void YaSvoboden();     // Песня Я Свободен!
 void Fanfary();        // Приветственные фанфары
+void PoraDomoy();      // Песня Пора домой!
 
 void setup()
 {
@@ -584,7 +585,8 @@ void GoHome()
 void Music()
 {
   // ****************** ТУТ БУДЕТ ВЫЗЫВАТЬСЯ РАЗНАЯ МУЗЫКИ ************************
-  YaSvoboden();
+  // YaSvoboden();
+  PoraDomoy();
 }
 void RealTime()
 {
@@ -867,4 +869,147 @@ void Fanfary()
     delay(pauseBetweenNotes);
     noTone(PinBuzzer);
   }
+}
+void PoraDomoy()
+{
+  tone(PinBuzzer, NOTE_D4); // Ре 4
+  delay(150);
+  noTone(PinBuzzer);
+  delay(70);
+
+  tone(PinBuzzer, NOTE_D4); // Ре 4
+  delay(150);
+  noTone(PinBuzzer);
+  delay(70);
+
+  tone(PinBuzzer, NOTE_D4); // Ре 4
+  delay(150);
+  noTone(PinBuzzer);
+  delay(70);
+
+  tone(PinBuzzer, NOTE_D4); // Ре 4
+  delay(150);
+  noTone(PinBuzzer);
+  delay(70);
+
+  tone(PinBuzzer, NOTE_D4); // Ре 4
+  delay(250);
+  noTone(PinBuzzer);
+  delay(100);
+
+  tone(PinBuzzer, NOTE_C4); // До 4
+  delay(250);
+  noTone(PinBuzzer);
+  delay(150);
+
+  tone(PinBuzzer, NOTE_B3); // Си 3
+  delay(150);
+  noTone(PinBuzzer);
+  delay(100);
+
+  tone(PinBuzzer, NOTE_A3); // Ля 3
+  delay(250);
+  noTone(PinBuzzer);
+  delay(100);
+
+  tone(PinBuzzer, NOTE_G3); // Соль 3
+  delay(350);
+  noTone(PinBuzzer);
+  delay(150);
+
+  //******************************************
+
+  tone(PinBuzzer, NOTE_G3); // Соль 3
+  delay(150);
+  noTone(PinBuzzer);
+  delay(70);
+
+  tone(PinBuzzer, NOTE_A3); // Ля 3
+  delay(150);
+  noTone(PinBuzzer);
+  delay(70);
+
+  tone(PinBuzzer, NOTE_B3); // Си 3
+  delay(150);
+  noTone(PinBuzzer);
+  delay(70);
+
+  tone(PinBuzzer, NOTE_C4); // До 4
+  delay(400);
+  noTone(PinBuzzer);
+  delay(150);
+
+  //*************************************
+
+  tone(PinBuzzer, NOTE_C4); // До 4
+  delay(150);
+  noTone(PinBuzzer);
+  delay(100);
+
+  tone(PinBuzzer, NOTE_C4); // До 4
+  delay(150);
+  noTone(PinBuzzer);
+  delay(100);
+
+  tone(PinBuzzer, NOTE_B3); // Си 3
+  delay(300);
+  noTone(PinBuzzer);
+  delay(200);
+
+  tone(PinBuzzer, NOTE_B3); // Си 3
+  delay(150);
+  noTone(PinBuzzer);
+  delay(100);
+
+  tone(PinBuzzer, NOTE_A3); // Ля 3
+  delay(200);
+  noTone(PinBuzzer);
+  delay(100);
+
+  tone(PinBuzzer, NOTE_A3); // Ля 3
+  delay(350);
+  noTone(PinBuzzer);
+  delay(250);
+
+  //*****************************************
+
+  tone(PinBuzzer, NOTE_B3); // Си 3
+  delay(150);
+  noTone(PinBuzzer);
+  delay(100);
+
+  tone(PinBuzzer, NOTE_A3); // Ля 3
+  delay(450);
+  noTone(PinBuzzer);
+  delay(450);
+
+  tone(PinBuzzer, NOTE_A3); // Ля 3
+  delay(200);
+  noTone(PinBuzzer);
+  delay(100);
+
+  tone(PinBuzzer, NOTE_B3); // Си 3
+  delay(450);
+  noTone(PinBuzzer);
+  delay(300);
+
+  tone(PinBuzzer, NOTE_B3); // Си 3
+  delay(200);
+  noTone(PinBuzzer);
+  delay(100);
+
+  tone(PinBuzzer, NOTE_C4); // До 4
+  delay(200);
+  noTone(PinBuzzer);
+  delay(100);
+
+  tone(PinBuzzer, NOTE_B3); // Си 3
+  delay(200);
+  noTone(PinBuzzer);
+  delay(100);
+
+  tone(PinBuzzer, NOTE_A3); // Ля 3
+  delay(1000);
+  noTone(PinBuzzer);
+  delay(100);
 }
