@@ -21,6 +21,10 @@
 uint8_t Hum = 0; // Переменная влажности
 float Temp = 0;  // Переменная температуры
 
+uint32_t Minuty_so_starta = 0; // Минуты со старта программы
+uint8_t Chasy_so_starta = 0;   // Часы со старта программы
+uint16_t Dni_so_starta = 0;    // Дни со старта программы
+
 float Temp_BMP180 = 0;     // Переменная температуры с датчика BMP180
 uint32_t Press_BMP180 = 0; // Переменная давления с датчика BMP180
 
@@ -40,6 +44,7 @@ uint32_t TimerDHT = 0;
 uint32_t TimerFlag = 0;
 uint32_t TimerDS3231 = 0;
 uint32_t TimerBMP180 = 0;
+uint32_t Timer_minut = 0;
 uint16_t MyPeriod = 25000;
 
 uint32_t Iterations = 0; // Счетчик количества итераций (сбрасывается при смене флажков)
@@ -87,6 +92,7 @@ void Pressure();       // Функция вызова математики и о
 void YaSvoboden();     // Песня Я Свободен!
 void Fanfary();        // Приветственные фанфары
 void PoraDomoy();      // Песня Пора домой!
+void ReadMinuty();     // Цикл счетчика минут со старта программы
 
 void setup()
 {
@@ -1012,4 +1018,16 @@ void PoraDomoy()
   delay(1000);
   noTone(PinBuzzer);
   delay(100);
+}
+void ReadMinuty()
+{
+  if ((millis() - Timer_minut) >= 60000)
+  {
+    Timer_minut = millis();
+    Minuty_so_starta++;
+    if (Minuty_so_starta >= 60)
+    {
+      uint32_t tmp_Chasy_so_starta = Minuty_so_starta / 60;
+    }
+  }
 }
