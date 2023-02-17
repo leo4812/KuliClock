@@ -18,7 +18,7 @@
 
 #define PinBuzzer 3 // Пин пассивного зуммера
 
-uint8_t Hum = 0; // Переменная влажности
+int16_t Hum = 0; // Переменная влажности
 float Temp = 0;  // Переменная температуры
 
 uint8_t Minuty_so_starta = 0; // Минуты со старта программы
@@ -47,7 +47,8 @@ uint32_t TimerBMP180 = 0;
 uint32_t Timer_minut = 0;
 uint16_t MyPeriod = 25000;
 
-uint32_t Iterations = 0; // Счетчик количества итераций (сбрасывается при смене флажков)
+uint32_t Iterations = 0;      // Счетчик количества итераций (сбрасывается при смене флажков)
+uint32_t IterationsError = 0; // Счетчик количества итераций циклов ошибки (сбрасывается при смене флажков)
 
 bool Flag_Time = true; // Флажки
 bool Flag_HumTemp = false;
@@ -68,6 +69,19 @@ bool Second2 = false;
 bool Second1 = false;
 
 bool StartWorkingTime = true; // Флажок для фанфар при старте рабочего дня
+
+bool ErrorDHT22 = false;     // Флаг ошибки датчика температуры и влажности
+bool ErrorDS3231 = false;    // Флаг ошибки часов реального времени
+bool ErrorBMP180 = false;    // Флаг ошибки датчика давления
+bool BackLightNight = false; // Подсветка ночь
+bool BackLightDay = false;   // Подсветка день
+
+int16_t TMP_Hum = 0;          // Промежуточная переменная влажности для ошибки датчика
+float TMP_Temp = 0;           // Промежуточная переменная температуры для ошибки датчика
+uint32_t TimerErrorDHT22 = 0; // Таймер ошибки датчика DHT22
+
+uint32_t TMPPress_BMP180 = 0;  // Промежуточная переменная давления для ошибки датчика
+uint32_t TimerErrorBMP180 = 0; // Таймер ошибки датчика BMP180
 
 DHT dht(DHTPIN, DHTTYPE);
 LiquidCrystal_I2C lcd(0x27, 16, 2);
@@ -115,10 +129,40 @@ void loop()
   ReadDHT();
   ReadPressure();
   ReadMinuty();
+  //*************************************************
+  if ((ErrorDHT22 == true) || (ErrorDS3231 == true) || (ErrorBMP180 == true))
+  {
+    lcd.backlight();
+    BackLightNight = false;
+    BackLightDay = false;
+  }
+  else
+  {
+    if ((Hours >= 1) && (Hours <= 7))
+    {
+      if (BackLightNight == false)
+      {
+        lcd.noBacklight();
+        BackLightNight = true;
+        BackLightDay = false;
+      }
+    }
+    else
+    {
+      if (BackLightDay == false)
+      {
+        lcd.backlight();
+        BackLightNight = false;
+        BackLightDay = true;
+      }
+    }
+  }
+  //************************************************
   if ((millis() - TimerFlag) >= MyPeriod)
   {
     TimerFlag = millis(); // ЕСЛИ ДОБАВЛЯТЬ СЮДА НОВЫЕ ФЛАГИ, ТО ДОБАВИТЬ ЕЩЕ И В GoHome() в состояние false
     Iterations = 0;
+    IterationsError = 0;
     if (Flag_Time == true) // Период Темп Влаж
     {
       Flag_Time = false;
@@ -226,19 +270,19 @@ void loop()
     {
       Time();
     }
-    if (Flag_HumTemp == true)
+    else if (Flag_HumTemp == true)
     {
       HumTemp();
     }
-    if (Flag_RealTime == true)
+    else if (Flag_RealTime == true)
     {
       RealTime();
     }
-    if (Flag_Pressure == true)
+    else if (Flag_Pressure == true)
     {
       Pressure();
     }
-    if (Flag_soStarta == true)
+    else if (Flag_soStarta == true)
     {
       KuliClockWork();
     }
@@ -305,6 +349,20 @@ void ReadDHT()
     TimerDHT = millis();
     Hum = dht.readHumidity();
     Temp = dht.readTemperature();
+    if ((Temp == TMP_Temp) && (Hum == TMP_Hum))
+    {
+      if ((millis() - TimerErrorDHT22) >= 5400000)
+      {
+        ErrorDHT22 = true;
+      }
+    }
+    else
+    {
+      TimerErrorDHT22 = millis();
+      TMP_Temp = Temp;
+      TMP_Hum = Hum;
+      ErrorDHT22 = false;
+    }
   }
 }
 void Time()
@@ -331,38 +389,49 @@ void Time()
 }
 void HumTemp()
 {
-  if (Iterations == 0)
+  if (ErrorDHT22 == true)
   {
-    lcd.clear();
-    delay(300);
+    if (IterationsError == 0)
+    {
+      lcd.clear();
+      delay(300);
+      lcd.setCursor(0, 0);
+      lcd.print("Sensor DHT22");
+      lcd.setCursor(0, 1);
+      lcd.print("STUCK");
+    }
+    IterationsError++;
+  }
+  else
+  {
+    if (Iterations == 0)
+    {
+      lcd.clear();
+      delay(300);
 
-    lcd.setCursor(0, 0);
-    lcd.print("Hum: ");
-    lcd.setCursor(14, 0);
-    lcd.print("%");
+      lcd.setCursor(0, 0);
+      lcd.print("Hum: ");
+      lcd.setCursor(14, 0);
+      lcd.print("%");
 
-    lcd.setCursor(0, 1);
-    lcd.print("Temp: ");
-    lcd.setCursor(14, 1);
-    lcd.print("C");
+      lcd.setCursor(0, 1);
+      lcd.print("Temp: ");
+      lcd.setCursor(14, 1);
+      lcd.print("C");
 
+      lcd.setCursor(7, 0);
+      lcd.print(Hum);
+
+      lcd.setCursor(7, 1);
+      lcd.print(Temp);
+    }
     lcd.setCursor(7, 0);
     lcd.print(Hum);
 
     lcd.setCursor(7, 1);
     lcd.print(Temp);
+    Iterations++;
   }
-  lcd.setCursor(7, 0);
-  lcd.print(Hum);
-
-  lcd.setCursor(7, 1);
-  lcd.print(Temp);
-  // Serial.print("Влажность: ");
-  // Serial.print(Hum);
-  // Serial.print("   “Температура: ");
-  // Serial.println(Temp);
-
-  Iterations++;
 }
 void ReadTime()
 {
@@ -376,6 +445,14 @@ void ReadTime()
     Month = rtc.getMonth();
     Year = rtc.getYear();
     Day = rtc.getDay();
+    if (Year <= 2022)
+    {
+      ErrorDS3231 = true;
+    }
+    else
+    {
+      ErrorDS3231 = false;
+    }
   }
 }
 void WorkingTime()
@@ -725,77 +802,113 @@ void RealTime()
     lcd.setCursor(9, 1);
     lcd.print(":");
   }
-
-  if (Hours < 10) // Часы
+  if (ErrorDS3231 == true)
   {
-    lcd.setCursor(4, 1);
-    lcd.print("0");
-    lcd.print(Hours);
+    lcd.setCursor(0, 1);
+    lcd.print("Check battery!");
   }
   else
   {
-    lcd.setCursor(4, 1);
-    lcd.print(Hours);
-  }
+    if (Hours < 10) // Часы
+    {
+      lcd.setCursor(4, 1);
+      lcd.print("0");
+      lcd.print(Hours);
+    }
+    else
+    {
+      lcd.setCursor(4, 1);
+      lcd.print(Hours);
+    }
 
-  if (Minutes < 10) // Минуты
-  {
-    lcd.setCursor(7, 1);
-    lcd.print("0");
-    lcd.print(Minutes);
-  }
-  else
-  {
-    lcd.setCursor(7, 1);
-    lcd.print(Minutes);
-  }
+    if (Minutes < 10) // Минуты
+    {
+      lcd.setCursor(7, 1);
+      lcd.print("0");
+      lcd.print(Minutes);
+    }
+    else
+    {
+      lcd.setCursor(7, 1);
+      lcd.print(Minutes);
+    }
 
-  if (Seconds < 10) // Секунды
-  {
-    lcd.setCursor(10, 1);
-    lcd.print("0");
-    lcd.print(Seconds);
-  }
-  else
-  {
-    lcd.setCursor(10, 1);
-    lcd.print(Seconds);
+    if (Seconds < 10) // Секунды
+    {
+      lcd.setCursor(10, 1);
+      lcd.print("0");
+      lcd.print(Seconds);
+    }
+    else
+    {
+      lcd.setCursor(10, 1);
+      lcd.print(Seconds);
+    }
   }
   Iterations++;
 }
 void ReadPressure()
 {
-  if ((millis() - TimerBMP180) >= 55000)
+  if ((millis() - TimerBMP180) >= 30000)
   {
     TimerBMP180 = millis();
     Temp_BMP180 = bmp.readTemperature();
     Press_BMP180 = bmp.readPressure();
+    if (Press_BMP180 == TMPPress_BMP180)
+    {
+      if ((millis() - TimerErrorBMP180) >= 5400000)
+      {
+        ErrorBMP180 = true;
+      }
+    }
+    else
+    {
+      TimerErrorBMP180 = millis();
+      TMPPress_BMP180 = Press_BMP180;
+      ErrorBMP180 = false;
+    }
   }
 }
 void Pressure()
 {
-  float PressMM = ((float)Press_BMP180 * 0.00750);
-  uint16_t PressMMprint = PressMM;
-  if (Iterations == 0)
+  if (ErrorBMP180 == true)
   {
-    lcd.clear();
-    delay(300);
-
-    lcd.setCursor(0, 0);
-    lcd.print("Press:");
-    lcd.setCursor(14, 0);
-    lcd.print("mm");
-
-    lcd.setCursor(0, 1);
-    lcd.print("Press:");
-    lcd.setCursor(14, 1);
-    lcd.print("Pa");
+    if (IterationsError == 0)
+    {
+      lcd.clear();
+      delay(300);
+      lcd.setCursor(0, 0);
+      lcd.print("Sensor BMP180");
+      lcd.setCursor(0, 1);
+      lcd.print("STUCK");
+    }
+    IterationsError++;
   }
-  lcd.setCursor(7, 0);
-  lcd.print(PressMMprint);
-  lcd.setCursor(7, 1);
-  lcd.print(Press_BMP180);
-  Iterations++;
+  else
+  {
+    float PressMM = ((float)Press_BMP180 * 0.00750);
+    uint16_t PressMMprint = PressMM;
+    if (Iterations == 0)
+    {
+      lcd.clear();
+      delay(300);
+
+      lcd.setCursor(0, 0);
+      lcd.print("Press:");
+      lcd.setCursor(14, 0);
+      lcd.print("mm");
+
+      lcd.setCursor(0, 1);
+      lcd.print("Press:");
+      lcd.setCursor(14, 1);
+      lcd.print("Pa");
+    }
+    lcd.setCursor(7, 0);
+    lcd.print(PressMMprint);
+    lcd.setCursor(7, 1);
+    lcd.print(Press_BMP180);
+    Iterations++;
+  }
 }
 void YaSvoboden()
 {
