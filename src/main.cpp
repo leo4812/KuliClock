@@ -21,9 +21,9 @@
 uint8_t Hum = 0; // Переменная влажности
 float Temp = 0;  // Переменная температуры
 
-uint32_t Minuty_so_starta = 0; // Минуты со старта программы
-uint8_t Chasy_so_starta = 0;   // Часы со старта программы
-uint16_t Dni_so_starta = 0;    // Дни со старта программы
+uint8_t Minuty_so_starta = 0; // Минуты со старта программы
+uint8_t Chasy_so_starta = 0;  // Часы со старта программы
+uint16_t Dni_so_starta = 0;   // Дни со старта программы
 
 float Temp_BMP180 = 0;     // Переменная температуры с датчика BMP180
 uint32_t Press_BMP180 = 0; // Переменная давления с датчика BMP180
@@ -53,6 +53,7 @@ bool Flag_Time = true; // Флажки
 bool Flag_HumTemp = false;
 bool Flag_RealTime = false;
 bool Flag_Pressure = false;
+bool Flag_soStarta = false;
 
 bool CountdownFlag = false; // Флажок для функции обратного отсчета
 bool Second10 = false;
@@ -65,6 +66,8 @@ bool Second4 = false;
 bool Second3 = false;
 bool Second2 = false;
 bool Second1 = false;
+
+bool StartWorkingTime = true; // Флажок для фанфар при старте рабочего дня
 
 DHT dht(DHTPIN, DHTTYPE);
 LiquidCrystal_I2C lcd(0x27, 16, 2);
@@ -93,6 +96,7 @@ void YaSvoboden();     // Песня Я Свободен!
 void Fanfary();        // Приветственные фанфары
 void PoraDomoy();      // Песня Пора домой!
 void ReadMinuty();     // Цикл счетчика минут со старта программы
+void KuliClockWork();  // Цикл количества дней и часов со старта часов
 
 void setup()
 {
@@ -110,6 +114,7 @@ void loop()
   ReadTime();
   ReadDHT();
   ReadPressure();
+  ReadMinuty();
   if ((millis() - TimerFlag) >= MyPeriod)
   {
     TimerFlag = millis(); // ЕСЛИ ДОБАВЛЯТЬ СЮДА НОВЫЕ ФЛАГИ, ТО ДОБАВИТЬ ЕЩЕ И В GoHome() в состояние false
@@ -120,6 +125,7 @@ void loop()
       Flag_HumTemp = true;
       Flag_RealTime = false;
       Flag_Pressure = false;
+      Flag_soStarta = false;
       if ((Day <= 5) && (Hours >= 9) && (Hours < 17))
       {
         MyPeriod = 20000;
@@ -135,21 +141,7 @@ void loop()
       Flag_HumTemp = false;
       Flag_RealTime = true;
       Flag_Pressure = false;
-      if ((Day <= 5) && (Hours >= 9) && (Hours < 17))
-      {
-        MyPeriod = 15000;
-      }
-      else
-      {
-        MyPeriod = 20000;
-      }
-    }
-    else if (Flag_RealTime == true) // Период Давления
-    {
-      Flag_Time = false;
-      Flag_HumTemp = false;
-      Flag_RealTime = false;
-      Flag_Pressure = true;
+      Flag_soStarta = false;
       if ((Day <= 5) && (Hours >= 9) && (Hours < 17))
       {
         MyPeriod = 10000;
@@ -159,12 +151,45 @@ void loop()
         MyPeriod = 15000;
       }
     }
-    else if (Flag_Pressure == true) // Период Рабочего времени
+    else if (Flag_RealTime == true) // Период Давления
+    {
+      Flag_Time = false;
+      Flag_HumTemp = false;
+      Flag_RealTime = false;
+      Flag_Pressure = true;
+      Flag_soStarta = false;
+      if ((Day <= 5) && (Hours >= 9) && (Hours < 17))
+      {
+        MyPeriod = 10000;
+      }
+      else
+      {
+        MyPeriod = 15000;
+      }
+    }
+    else if (Flag_Pressure == true) // Период отсчета сколько работает программа
+    {
+      Flag_Time = false;
+      Flag_HumTemp = false;
+      Flag_RealTime = false;
+      Flag_Pressure = false;
+      Flag_soStarta = true;
+      if ((Day <= 5) && (Hours >= 9) && (Hours < 17))
+      {
+        MyPeriod = 10000;
+      }
+      else
+      {
+        MyPeriod = 10000;
+      }
+    }
+    else if (Flag_soStarta == true) // Период Рабочего времени
     {
       Flag_Time = true;
       Flag_HumTemp = false;
       Flag_RealTime = false;
       Flag_Pressure = false;
+      Flag_soStarta = false;
       if ((Day <= 5) && (Hours >= 9) && (Hours < 17))
       {
         MyPeriod = 25000;
@@ -212,6 +237,10 @@ void loop()
     if (Flag_Pressure == true)
     {
       Pressure();
+    }
+    if (Flag_soStarta == true)
+    {
+      KuliClockWork();
     }
   }
 }
@@ -366,6 +395,11 @@ void WorkingTime()
   }
   MathTime();
   Iterations++;
+  if (StartWorkingTime == false)
+  {
+    StartWorkingTime = true;
+    Fanfary();
+  }
 }
 void MathTime()
 {
@@ -443,6 +477,7 @@ void PreWorkingDay()
     lcd.print("has not Started");
   }
   Iterations++;
+  StartWorkingTime = false;
 }
 void PostWorkingDay()
 {
@@ -457,6 +492,7 @@ void PostWorkingDay()
     lcd.print("is Over!");
   }
   Iterations++;
+  StartWorkingTime = false;
 }
 void Countdown()
 {
@@ -587,6 +623,7 @@ void GoHome()
   Flag_HumTemp = true; // *************** НОВЫЕ ФЛАГИ СЮДА!!!!!!! *********************
   Flag_RealTime = false;
   Flag_Pressure = false;
+  Flag_soStarta = false;
 }
 void Music()
 {
@@ -1027,7 +1064,33 @@ void ReadMinuty()
     Minuty_so_starta++;
     if (Minuty_so_starta >= 60)
     {
-      uint32_t tmp_Chasy_so_starta = Minuty_so_starta / 60;
+      Minuty_so_starta = 0;
+      Chasy_so_starta++;
+    }
+    if (Chasy_so_starta >= 24)
+    {
+      Chasy_so_starta = 0;
+      Dni_so_starta++;
     }
   }
+}
+void KuliClockWork()
+{
+  if (Iterations == 0)
+  {
+    lcd.clear();
+    delay(300);
+
+    lcd.setCursor(0, 0);
+    lcd.print("KuliClock Work:");
+    lcd.setCursor(0, 1);
+    lcd.print("Day:");
+    lcd.setCursor(4, 1);
+    lcd.print(Dni_so_starta);
+    lcd.setCursor(8, 1);
+    lcd.print("Hour:");
+    lcd.setCursor(13, 1);
+    lcd.print(Chasy_so_starta);
+  }
+  Iterations++;
 }
