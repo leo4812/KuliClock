@@ -344,24 +344,27 @@ void Start()
 }
 void ReadDHT()
 {
-  if ((millis() - TimerDHT) >= 3000)
+  if ((Flag_Time == true) || (Flag_HumTemp == true)) // Датчик опрашивается только во время отображения ТРВ и самой Темп. Влаж.
   {
-    TimerDHT = millis();
-    Hum = dht.readHumidity();
-    Temp = dht.readTemperature();
-    if ((Temp == TMP_Temp) && (Hum == TMP_Hum))
+    if ((millis() - TimerDHT) >= 3500) // Каждые 3,5 секунды
     {
-      if ((millis() - TimerErrorDHT22) >= 5400000)
+      TimerDHT = millis();
+      Hum = dht.readHumidity();
+      Temp = dht.readTemperature();
+      if ((Temp == TMP_Temp) && (Hum == TMP_Hum))
       {
-        ErrorDHT22 = true;
+        if ((millis() - TimerErrorDHT22) >= 5400000)
+        {
+          ErrorDHT22 = true;
+        }
       }
-    }
-    else
-    {
-      TimerErrorDHT22 = millis();
-      TMP_Temp = Temp;
-      TMP_Hum = Hum;
-      ErrorDHT22 = false;
+      else
+      {
+        TimerErrorDHT22 = millis();
+        TMP_Temp = Temp;
+        TMP_Hum = Hum;
+        ErrorDHT22 = false;
+      }
     }
   }
 }
