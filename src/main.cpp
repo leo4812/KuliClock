@@ -126,7 +126,6 @@ void setup()
 void loop()
 {
   ReadTime();
-  ReadDHT();
   ReadPressure();
   ReadMinuty();
   //*************************************************
@@ -344,27 +343,24 @@ void Start()
 }
 void ReadDHT()
 {
-  if ((Flag_Time == true) || (Flag_HumTemp == true)) // Датчик опрашивается только во время отображения ТРВ и самой Темп. Влаж.
+  if ((millis() - TimerDHT) >= 3500) // Каждые 3,5 секунды
   {
-    if ((millis() - TimerDHT) >= 3500) // Каждые 3,5 секунды
+    TimerDHT = millis();
+    Hum = dht.readHumidity();
+    Temp = dht.readTemperature();
+    if ((Temp == TMP_Temp) && (Hum == TMP_Hum))
     {
-      TimerDHT = millis();
-      Hum = dht.readHumidity();
-      Temp = dht.readTemperature();
-      if ((Temp == TMP_Temp) && (Hum == TMP_Hum))
+      if ((millis() - TimerErrorDHT22) >= 5400000)
       {
-        if ((millis() - TimerErrorDHT22) >= 5400000)
-        {
-          ErrorDHT22 = true;
-        }
+        ErrorDHT22 = true;
       }
-      else
-      {
-        TimerErrorDHT22 = millis();
-        TMP_Temp = Temp;
-        TMP_Hum = Hum;
-        ErrorDHT22 = false;
-      }
+    }
+    else
+    {
+      TimerErrorDHT22 = millis();
+      TMP_Temp = Temp;
+      TMP_Hum = Hum;
+      ErrorDHT22 = false;
     }
   }
 }
@@ -392,6 +388,7 @@ void Time()
 }
 void HumTemp()
 {
+  ReadDHT();
   if (ErrorDHT22 == true)
   {
     if (IterationsError == 0)
