@@ -12,6 +12,8 @@
 #include <Adafruit_BMP085.h>
 // ***************************** Noty *****************************
 #include "pitches.h"
+// **************************** EEPROM ****************************
+#include <EEPROM.h>
 
 #define DHTPIN 2      // пин DHT22
 #define DHTTYPE DHT22 // тип датчика DHT 22  (AM2302), AM2321
@@ -22,8 +24,11 @@ int16_t Hum = 0; // Переменная влажности
 float Temp = 0;  // Переменная температуры
 
 uint8_t Minuty_so_starta = 0; // Минуты со старта программы
-uint8_t Chasy_so_starta = 0;  // Часы со старта программы
-uint16_t Dni_so_starta = 0;   // Дни со старта программы
+uint8_t Chasy_so_starta = 0;  // Часы со старта программы (В EEPROMе 0 байт)
+uint16_t Dni_so_starta = 0;   // Дни со старта программы (В EEPROMе 1-2 байт)
+
+uint16_t STUCK_DHT22 = 0;       // Количество раз которое датчик DHT22 завис (В EEPROMе 3-4 байт)
+uint32_t STUCK_DHT22_Timer = 0; // Таймер для цикла KuliClockWork
 
 float Temp_BMP180 = 0;     // Переменная температуры с датчика BMP180
 uint32_t Press_BMP180 = 0; // Переменная давления с датчика BMP180
@@ -88,29 +93,30 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 MicroDS3231 rtc; // по умолчанию адрес 0x68
 Adafruit_BMP085 bmp;
 
-void Start();          // Приветствие
-void ReadDHT();        // Чтение DHT22
-void Time();           // Left to work (Осталось работать)
-void HumTemp();        // HumTemp (влажность и температура)
-void ReadTime();       // Опрос датчика DS3231
-void MathTime();       // Математика оставшегося рабочего времени
-void WorkingTime();    // Рабочее время
-void Weekend();        // Выходные
-void PreWorkingDay();  // Рабочий день еще не начался
-void PostWorkingDay(); // Рабочий день закончен
-void Countdown();      // Обратный осчет секунд до конца рабочего дня
-void ShortSignal();    // Короткий звуковой сигнал
-void LongSignal();     // Длинный звуковой сигнал
-void GoHome();         // Вызывается ровно в 17:00 после длинного звукового сигнала
-void Music();          // Функция музыки (управляет выбором музыки)
-void RealTime();       // Функция отрисовки реального времени и даты
-void ReadPressure();   // Функция опроса датчика давления
-void Pressure();       // Функция вызова математики и отрисовки давления
-void YaSvoboden();     // Песня Я Свободен!
-void Fanfary();        // Приветственные фанфары
-void PoraDomoy();      // Песня Пора домой!
-void ReadMinuty();     // Цикл счетчика минут со старта программы
-void KuliClockWork();  // Цикл количества дней и часов со старта часов
+void Start();                // Приветствие
+void ReadDHT();              // Чтение DHT22
+void Time();                 // Left to work (Осталось работать)
+void HumTemp();              // HumTemp (влажность и температура)
+void ReadTime();             // Опрос датчика DS3231
+void MathTime();             // Математика оставшегося рабочего времени
+void WorkingTime();          // Рабочее время
+void Weekend();              // Выходные
+void PreWorkingDay();        // Рабочий день еще не начался
+void PostWorkingDay();       // Рабочий день закончен
+void Countdown();            // Обратный осчет секунд до конца рабочего дня
+void ShortSignal();          // Короткий звуковой сигнал
+void LongSignal();           // Длинный звуковой сигнал
+void GoHome();               // Вызывается ровно в 17:00 после длинного звукового сигнала
+void Music();                // Функция музыки (управляет выбором музыки)
+void RealTime();             // Функция отрисовки реального времени и даты
+void ReadPressure();         // Функция опроса датчика давления
+void Pressure();             // Функция вызова математики и отрисовки давления
+void YaSvoboden();           // Песня Я Свободен!
+void Fanfary();              // Приветственные фанфары
+void PoraDomoy();            // Песня Пора домой!
+void ReadMinuty();           // Цикл счетчика минут со старта программы
+void KuliClockWork();        // Цикл количества дней и часов со старта часов
+void (*resetFunc)(void) = 0; // объявляем функцию reset
 
 void setup()
 {
@@ -119,6 +125,9 @@ void setup()
   lcd.init();
   rtc.begin();
   bmp.begin();
+  EEPROM.get(0, Chasy_so_starta);
+  EEPROM.get(1, Dni_so_starta);
+  EEPROM.get(3, STUCK_DHT22);
   Start();
   TimerFlag = millis();
 }
@@ -219,11 +228,11 @@ void loop()
       Flag_soStarta = true;
       if ((Day <= 5) && (Hours >= 9) && (Hours < 17))
       {
-        MyPeriod = 10000;
+        MyPeriod = 14000;
       }
       else
       {
-        MyPeriod = 10000;
+        MyPeriod = 14000;
       }
     }
     else if (Flag_soStarta == true) // Период Рабочего времени
@@ -393,6 +402,7 @@ void HumTemp()
   {
     if (IterationsError == 0)
     {
+      lcd.backlight(); // включаем подсветку дисплея
       lcd.clear();
       delay(300);
       lcd.setCursor(0, 0);
@@ -401,6 +411,12 @@ void HumTemp()
       lcd.print("STUCK");
     }
     IterationsError++;
+    LongSignal();
+    STUCK_DHT22++;
+    delay(10000);
+    EEPROM.put(3, STUCK_DHT22);
+    delay(5000);
+    resetFunc(); // вызываем reset
   }
   else
   {
@@ -1179,11 +1195,15 @@ void ReadMinuty()
     {
       Minuty_so_starta = 0;
       Chasy_so_starta++;
+      EEPROM.put(0, Chasy_so_starta);
+      EEPROM.put(1, Dni_so_starta);
     }
     if (Chasy_so_starta >= 24)
     {
       Chasy_so_starta = 0;
       Dni_so_starta++;
+      EEPROM.put(0, Chasy_so_starta);
+      EEPROM.put(1, Dni_so_starta);
     }
   }
 }
@@ -1191,6 +1211,7 @@ void KuliClockWork()
 {
   if (Iterations == 0)
   {
+    STUCK_DHT22_Timer = millis();
     lcd.clear();
     delay(300);
 
@@ -1204,6 +1225,37 @@ void KuliClockWork()
     lcd.print("Hour:");
     lcd.setCursor(13, 1);
     lcd.print(Chasy_so_starta);
+  }
+  if (STUCK_DHT22 != 0)
+  {
+    if ((millis() - STUCK_DHT22_Timer) >= 8000)
+    {
+      STUCK_DHT22_Timer = millis();
+      lcd.clear();
+      delay(300);
+
+      lcd.setCursor(2, 0);
+      lcd.print("Sensor DHT22");
+      lcd.setCursor(0, 1);
+      lcd.print("stuck:");
+      lcd.setCursor(7, 1);
+      lcd.print(STUCK_DHT22);
+      if (STUCK_DHT22 < 10)
+      {
+        lcd.setCursor(9, 1);
+        lcd.print("onse");
+      }
+      else if (STUCK_DHT22 > 99)
+      {
+        lcd.setCursor(11, 1);
+        lcd.print("onse");
+      }
+      else
+      {
+        lcd.setCursor(10, 1);
+        lcd.print("onse");
+      }
+    }
   }
   Iterations++;
 }
