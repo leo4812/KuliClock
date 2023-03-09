@@ -352,16 +352,26 @@ void Start()
 }
 void ReadDHT()
 {
-  if ((millis() - TimerDHT) >= 3500) // Каждые 3,5 секунды
+  if ((millis() - TimerDHT) >= 6000) // Каждые 6 секунды
   {
     TimerDHT = millis();
     Hum = dht.readHumidity();
     Temp = dht.readTemperature();
     if ((Temp == TMP_Temp) && (Hum == TMP_Hum))
     {
-      if ((millis() - TimerErrorDHT22) >= 5400000)
+      if ((Day <= 5) && (Hours >= 9) && (Hours < 18))
       {
-        ErrorDHT22 = true;
+        if ((millis() - TimerErrorDHT22) >= 5400000)
+        {
+          ErrorDHT22 = true;
+        }
+      }
+      else
+      {
+        if ((millis() - TimerErrorDHT22) >= 10800000)
+        {
+          ErrorDHT22 = true;
+        }
       }
     }
     else
@@ -1219,11 +1229,19 @@ void KuliClockWork()
     lcd.print("KuliClock Work:");
     lcd.setCursor(0, 1);
     lcd.print("Day:");
-    lcd.setCursor(4, 1);
-    lcd.print(Dni_so_starta);
+    if (Dni_so_starta > 99)
+    {
+      lcd.setCursor(4, 1);
+      lcd.print(Dni_so_starta);
+    }
+    else
+    {
+      lcd.setCursor(5, 1);
+      lcd.print(Dni_so_starta);
+    }
     lcd.setCursor(8, 1);
     lcd.print("Hour:");
-    lcd.setCursor(13, 1);
+    lcd.setCursor(14, 1);
     lcd.print(Chasy_so_starta);
   }
   if (STUCK_DHT22 != 0)
